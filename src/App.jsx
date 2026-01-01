@@ -314,6 +314,10 @@ export default function App() {
     prevGameStateRef.current = gameState;
   }, [gameState]);
 
+  // 他プレイヤーの爆弾検知用
+  const prevLivesRef = useRef(null);
+  const prevLastTriggeredByRef = useRef(null);
+
   useEffect(() => {
     if (!roomId) return;
 
@@ -332,11 +336,25 @@ export default function App() {
         if (data.shieldsEnabled !== undefined) setShieldsEnabled(data.shieldsEnabled);
         if (data.playerShields !== undefined) setPlayerShields(data.playerShields || {});
         if (data.lastTriggeredBy !== undefined) setLastTriggeredBy(data.lastTriggeredBy);
+
+        // 他プレイヤーが爆弾を踏んだか検知
+        if (
+          prevLivesRef.current !== null &&
+          data.lives < prevLivesRef.current &&
+          data.lastTriggeredBy &&
+          data.lastTriggeredBy !== playerName &&
+          data.lastTriggeredBy !== prevLastTriggeredByRef.current
+        ) {
+          playBoomSound();
+        }
+        
+        prevLivesRef.current = data.lives;
+        prevLastTriggeredByRef.current = data.lastTriggeredBy;
       }
     });
 
     return () => unsubscribe();
-  }, [roomId]);
+  }, [roomId, playerName]);
 
   const getPlayerColor = (existingPlayers) => {
     const usedColors = Object.values(existingPlayers || {}).map(p => p.color);
