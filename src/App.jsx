@@ -279,6 +279,7 @@ export default function App() {
   const [lives, setLives] = useState(1);
   const [maxLives, setMaxLives] = useState(1);
   const [shieldsEnabled, setShieldsEnabled] = useState(true);
+  const [initialShields, setInitialShields] = useState(2);
   const [playerShields, setPlayerShields] = useState({});
   const [explosions, setExplosions] = useState([]);
   const [lastTriggeredBy, setLastTriggeredBy] = useState(null);
@@ -334,6 +335,7 @@ export default function App() {
         if (data.lives !== undefined) setLives(data.lives);
         if (data.maxLives !== undefined) setMaxLives(data.maxLives);
         if (data.shieldsEnabled !== undefined) setShieldsEnabled(data.shieldsEnabled);
+        if (data.initialShields !== undefined) setInitialShields(data.initialShields);
         if (data.playerShields !== undefined) setPlayerShields(data.playerShields || {});
         if (data.lastTriggeredBy !== undefined) setLastTriggeredBy(data.lastTriggeredBy);
 
@@ -382,6 +384,7 @@ export default function App() {
       lives: 1,
       maxLives: 1,
       shieldsEnabled: true,
+      initialShields: 2,
       playerShields: {},
       lastTriggeredBy: null,
       createdAt: Date.now()
@@ -424,10 +427,10 @@ export default function App() {
   const startGame = async () => {
     const newBoard = createBoard(boardSize, difficulty, -1, -1, shieldsEnabled);
     
-    // 全プレイヤーにシールド2を付与
-    const initialShields = {};
+    // 全プレイヤーに初期シールドを付与
+    const playerInitialShields = {};
     Object.keys(players).forEach(pName => {
-      initialShields[pName] = 2;
+      playerInitialShields[pName] = initialShields;
     });
     
     await update(ref(database, `rooms/${roomId}`), {
@@ -435,7 +438,7 @@ export default function App() {
       gameState: 'playing',
       firstClick: true,
       lives: maxLives,
-      playerShields: initialShields,
+      playerShields: playerInitialShields,
       lastTriggeredBy: null
     });
   };
@@ -508,13 +511,6 @@ export default function App() {
         // プレイヤーのシールド数を取得
         currentData.playerShields = currentData.playerShields || {};
         let currentShieldCount = currentData.playerShields[playerName] || 0;
-        
-        // シールドを持っているなら、このクリックで1つ消費（先に消費）
-        const hadShield = currentShieldCount > 0;
-        if (hadShield) {
-          currentShieldCount -= 1;
-          currentData.playerShields[playerName] = currentShieldCount;
-        }
 
         // シールドアイテムを直接クリック → 開くだけで取得しない（次クリックで取得）
         if (cell.isShield && !cell.isMine) {
@@ -527,8 +523,9 @@ export default function App() {
 
         // 地雷を踏んだ
         if (cell.isMine) {
-          if (hadShield) {
-            // シールドで無効化（既に上で消費済み）
+          if (currentShieldCount > 0) {
+            // シールドで無効化（ここでシールド消費）
+            currentData.playerShields[playerName] = currentShieldCount - 1;
             cell.isRevealed = true;
             cell.revealedBy = playerName;
             cell.shieldUsed = true;
@@ -622,6 +619,11 @@ export default function App() {
       maxLives: newLives,
       lives: newLives
     });
+  };
+
+  const changeInitialShields = async (newShields) => {
+    if (!isHost || gameState === 'playing') return;
+    await set(ref(database, `rooms/${roomId}/initialShields`), newShields);
   };
 
   const toggleShields = async () => {
@@ -732,6 +734,10 @@ export default function App() {
 
   const flagCount = board ? board.flat().filter(c => c.isFlagged).length : 0;
   const mineCount = board ? board.flat().filter(c => c.isMine).length : 0;
+  const wrongFlagCount = board ? board.flat().filter(c => c.isFlagged && !c.isMine).length : 0;
+  
+  // 全マスが「開いている or 旗が立っている」状態かどうか
+  const allCovered = board ? board.flat().every(c => c.isRevealed || c.isFlagged) : false;
 
   if (screen === 'lobby') {
     return (
@@ -864,7 +870,7 @@ export default function App() {
                 </div>
 
                 <div className="setting-item">
-                  <label>🛡️ 無敵アイテム: </label>
+                  <label>🛡️ シールド: </label>
                   <button 
                     onClick={toggleShields}
                     className={`btn-toggle ${shieldsEnabled ? 'on' : 'off'}`}
@@ -872,6 +878,21 @@ export default function App() {
                     {shieldsEnabled ? 'ON' : 'OFF'}
                   </button>
                 </div>
+
+                {shieldsEnabled && (
+                  <div className="setting-item">
+                    <label>🛡️ 初期数: </label>
+                    <select 
+                      value={initialShields} 
+                      onChange={(e) => changeInitialShields(Number(e.target.value))}
+                      className="setting-select"
+                    >
+                      {[0, 1, 2, 3, 5, 10].map(n => (
+                        <option key={n} value={n}>{n}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
               </div>
 
               <button onClick={startGame} className="btn-start">
@@ -887,7 +908,7 @@ export default function App() {
                 難易度: {DIFFICULTY[difficulty]?.icon} {DIFFICULTY[difficulty]?.name} ｜
                 サイズ: {BOARD_SIZE[boardSize]?.name} ｜
                 残機: {maxLives} ｜
-                シールド: {shieldsEnabled ? 'ON' : 'OFF'}
+                シールド: {shieldsEnabled ? `ON (初期${initialShields}個)` : 'OFF'}
               </p>
             </div>
           )}
@@ -901,6 +922,9 @@ export default function App() {
             <div>🚩 {flagCount}</div>
             <div>❤️ {lives}/{maxLives}</div>
             {shieldsEnabled && <div className={myShieldCount > 0 ? 'shield-status' : ''}>🛡️ {myShieldCount}</div>}
+            {allCovered && wrongFlagCount > 0 && gameState === 'playing' && (
+              <div className="wrong-flag-warning">⚠️ 誤旗 {wrongFlagCount}</div>
+            )}
             <button onClick={resetGame} className="btn-reset-small">🔄</button>
           </div>
 
@@ -968,7 +992,7 @@ export default function App() {
         <div className="item-info">
           <div className="item-info-title">🛡️ シールドについて</div>
           <div className="item-info-text">
-            全員シールド2個持ちでスタート！1クリックで1個消費、地雷を踏んでも無効化。
+            地雷を踏むとシールドを1個消費して無効化！安全マスでは減らない。
             マップ上のシールドは2回クリックで取得（1回目で発見、2回目で拾う）。
           </div>
         </div>
