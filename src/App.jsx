@@ -405,12 +405,19 @@ export default function App() {
 
   const startGame = async () => {
     const newBoard = createBoard(boardSize, difficulty, -1, -1, shieldsEnabled);
+    
+    // 全プレイヤーにシールド2を付与
+    const initialShields = {};
+    Object.keys(players).forEach(pName => {
+      initialShields[pName] = 2;
+    });
+    
     await update(ref(database, `rooms/${roomId}`), {
       board: newBoard,
       gameState: 'playing',
       firstClick: true,
       lives: maxLives,
-      playerShields: {},
+      playerShields: initialShields,
       lastTriggeredBy: null
     });
   };
@@ -471,13 +478,9 @@ export default function App() {
         if (cell.isRevealed && cell.isShield && !cell.shieldCollected) {
           currentData.playerShields = currentData.playerShields || {};
           let currentShieldCount = currentData.playerShields[playerName] || 0;
-          
-          // シールド持ってたら消費してから取得
-          if (currentShieldCount > 0) {
-            currentShieldCount -= 1;
-          }
           currentData.playerShields[playerName] = currentShieldCount + 1;
           cell.shieldCollected = true;
+          cell.collectedBy = playerName; // 誰が取得したか記録
           currentData.board = currentBoard;
           return currentData;
         }
@@ -487,28 +490,21 @@ export default function App() {
         // プレイヤーのシールド数を取得
         currentData.playerShields = currentData.playerShields || {};
         let currentShieldCount = currentData.playerShields[playerName] || 0;
-        
-        // シールドを持っているなら、このクリックで1つ消費（先に消費）
-        const hadShield = currentShieldCount > 0;
-        if (hadShield) {
-          currentShieldCount -= 1;
-          currentData.playerShields[playerName] = currentShieldCount;
-        }
 
-        // シールドアイテムを直接クリック → 取得して +1
+        // シールドアイテムを直接クリック → 開くだけで取得しない（次クリックで取得）
         if (cell.isShield && !cell.isMine) {
           cell.isRevealed = true;
           cell.revealedBy = playerName;
-          cell.shieldCollected = true;
-          currentData.playerShields[playerName] = currentShieldCount + 1;
+          // shieldCollectedはfalseのまま（取得していない）
           currentData.board = currentBoard;
           return currentData;
         }
 
         // 地雷を踏んだ
         if (cell.isMine) {
-          if (hadShield) {
-            // シールドで無効化
+          if (currentShieldCount > 0) {
+            // シールドで無効化（ここでシールド消費）
+            currentData.playerShields[playerName] = currentShieldCount - 1;
             cell.isRevealed = true;
             cell.revealedBy = playerName;
             cell.shieldUsed = true;
@@ -581,6 +577,7 @@ export default function App() {
     await runTransaction(cellRef, (currentCell) => {
       if (!currentCell || currentCell.isRevealed) return currentCell;
       currentCell.isFlagged = !currentCell.isFlagged;
+      currentCell.flaggedBy = currentCell.isFlagged ? playerName : null;
       return currentCell;
     });
   };
@@ -642,9 +639,13 @@ export default function App() {
   const getCellContent = (cell) => {
     if (cell.isFlagged) return '🚩';
     if (!cell.isRevealed) return '';
-    if (cell.isMine) return '💣'; // シールドで防いでも爆弾表示
-    if (cell.isShield && cell.shieldCollected) return ''; // 取得済みシールドは空表示
-    if (cell.isShield) return '🛡️'; // 未取得シールド（連鎖で露出した場合、表示はされないはずだが念のため）
+    if (cell.isMine) return '💣';
+    if (cell.isShield && !cell.shieldCollected) return '🛡️'; // 未取得シールド
+    // 取得済みシールドは周囲の爆弾数を表示
+    if (cell.isShield && cell.shieldCollected) {
+      if (cell.neighborMines === 0) return '';
+      return cell.neighborMines;
+    }
     if (cell.neighborMines === 0) return '';
     return cell.neighborMines;
   };
@@ -658,7 +659,10 @@ export default function App() {
     } else if (cell.shieldUsed) {
       base += ' cell-shield';
     } else if (cell.isShield && cell.shieldCollected) {
-      base += ' cell-revealed'; // 取得済みシールドは通常セル
+      base += ' cell-revealed';
+      if (cell.neighborMines > 0) {
+        base += ` cell-${cell.neighborMines}`;
+      }
     } else {
       base += ' cell-revealed';
       if (cell.neighborMines > 0) {
@@ -669,6 +673,27 @@ export default function App() {
   };
 
   const getCellStyle = (cell) => {
+    // 旗が立っている場合、旗を立てた人の色
+    if (cell.isFlagged && cell.flaggedBy && players[cell.flaggedBy]) {
+      return { 
+        boxShadow: `inset 0 0 0 3px ${players[cell.flaggedBy].color}`,
+        background: `${players[cell.flaggedBy].color}30`
+      };
+    }
+    // 未取得シールドは開いた人の色
+    if (cell.isRevealed && cell.isShield && !cell.shieldCollected && cell.revealedBy && players[cell.revealedBy]) {
+      return { 
+        boxShadow: `inset 0 0 0 3px ${players[cell.revealedBy].color}`,
+        background: `${players[cell.revealedBy].color}30`
+      };
+    }
+    // 取得済みシールドは取得した人の色
+    if (cell.isRevealed && cell.isShield && cell.shieldCollected && cell.collectedBy && players[cell.collectedBy]) {
+      return { 
+        boxShadow: `inset 0 0 0 2px ${players[cell.collectedBy].color}` 
+      };
+    }
+    // 通常の開いたマス
     if (cell.isRevealed && cell.revealedBy && players[cell.revealedBy]) {
       return { 
         boxShadow: `inset 0 0 0 2px ${players[cell.revealedBy].color}` 
@@ -917,10 +942,10 @@ export default function App() {
       
       {shieldsEnabled && (
         <div className="item-info">
-          <div className="item-info-title">🛡️ 無敵アイテムについて</div>
+          <div className="item-info-title">🛡️ シールドについて</div>
           <div className="item-info-text">
-            シールドを直接クリックすると取得！次の1クリックだけ無敵になるよ。
-            地雷を踏んでもセーフ！ただし安全なマスを開いても消費されるから注意。
+            全員シールド2個持ちでスタート！地雷を踏むとシールドを1つ消費して無効化。
+            マップ上のシールドは2回クリックで取得（1回目で発見、2回目で拾う）。
           </div>
         </div>
       )}
