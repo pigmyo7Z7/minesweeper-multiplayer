@@ -508,6 +508,13 @@ export default function App() {
         // プレイヤーのシールド数を取得
         currentData.playerShields = currentData.playerShields || {};
         let currentShieldCount = currentData.playerShields[playerName] || 0;
+        
+        // シールドを持っているなら、このクリックで1つ消費（先に消費）
+        const hadShield = currentShieldCount > 0;
+        if (hadShield) {
+          currentShieldCount -= 1;
+          currentData.playerShields[playerName] = currentShieldCount;
+        }
 
         // シールドアイテムを直接クリック → 開くだけで取得しない（次クリックで取得）
         if (cell.isShield && !cell.isMine) {
@@ -520,9 +527,8 @@ export default function App() {
 
         // 地雷を踏んだ
         if (cell.isMine) {
-          if (currentShieldCount > 0) {
-            // シールドで無効化（ここでシールド消費）
-            currentData.playerShields[playerName] = currentShieldCount - 1;
+          if (hadShield) {
+            // シールドで無効化（既に上で消費済み）
             cell.isRevealed = true;
             cell.revealedBy = playerName;
             cell.shieldUsed = true;
@@ -962,7 +968,7 @@ export default function App() {
         <div className="item-info">
           <div className="item-info-title">🛡️ シールドについて</div>
           <div className="item-info-text">
-            全員シールド2個持ちでスタート！地雷を踏むとシールドを1つ消費して無効化。
+            全員シールド2個持ちでスタート！1クリックで1個消費、地雷を踏んでも無効化。
             マップ上のシールドは2回クリックで取得（1回目で発見、2回目で拾う）。
           </div>
         </div>
