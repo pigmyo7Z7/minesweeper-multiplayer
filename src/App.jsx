@@ -863,7 +863,7 @@ export default function App() {
                     onChange={(e) => changeMaxLives(Number(e.target.value))}
                     className="setting-select"
                   >
-                    {[1, 2, 3, 5, 10, 99].map(n => (
+                    {[1, 2, 3, 5, 7, 10, 99].map(n => (
                       <option key={n} value={n}>{n}</option>
                     ))}
                   </select>
@@ -887,7 +887,7 @@ export default function App() {
                       onChange={(e) => changeInitialShields(Number(e.target.value))}
                       className="setting-select"
                     >
-                      {[0, 1, 2, 3, 5, 10].map(n => (
+                      {[0, 1, 2, 3, 5, 7, 10].map(n => (
                         <option key={n} value={n}>{n}</option>
                       ))}
                     </select>
