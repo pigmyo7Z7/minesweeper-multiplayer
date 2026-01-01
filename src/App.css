@@ -1,0 +1,372 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  min-height: 100vh;
+  color: white;
+}
+
+/* Lobby */
+.lobby {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 20px;
+}
+
+.lobby h1 {
+  font-size: 2.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.subtitle {
+  font-size: 1.2rem;
+  color: #94a3b8;
+  margin-bottom: 2rem;
+}
+
+.lobby-form {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 2rem;
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: 100%;
+  max-width: 320px;
+  backdrop-filter: blur(10px);
+}
+
+.lobby-form input {
+  padding: 12px 16px;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  background: rgba(255, 255, 255, 0.9);
+  color: #1e293b;
+}
+
+.lobby-form input::placeholder {
+  color: #64748b;
+}
+
+.btn-primary {
+  padding: 12px 24px;
+  background: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-primary:hover {
+  background: #2563eb;
+  transform: translateY(-2px);
+}
+
+.btn-secondary {
+  padding: 12px 24px;
+  background: #ef4444;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-secondary:hover {
+  background: #dc2626;
+  transform: translateY(-2px);
+}
+
+.divider {
+  text-align: center;
+  color: #64748b;
+  position: relative;
+}
+
+.divider::before,
+.divider::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: 35%;
+  height: 1px;
+  background: #475569;
+}
+
+.divider::before {
+  left: 0;
+}
+
+.divider::after {
+  right: 0;
+}
+
+/* Game Container */
+.game-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px;
+  min-height: 100vh;
+}
+
+.game-header {
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+.game-header h1 {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+}
+
+.room-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: center;
+  color: #94a3b8;
+}
+
+.room-id {
+  font-family: monospace;
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: #fbbf24;
+  background: rgba(251, 191, 36, 0.1);
+  padding: 4px 12px;
+  border-radius: 4px;
+}
+
+.btn-small {
+  padding: 4px 8px;
+  background: transparent;
+  border: 1px solid #475569;
+  border-radius: 4px;
+  color: #94a3b8;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.btn-small:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* Players */
+.players-list {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.player-tag {
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+/* Waiting Room */
+.waiting-room {
+  text-align: center;
+  padding: 2rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 16px;
+  margin: 1rem 0;
+}
+
+.difficulty-select {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin: 1rem 0;
+}
+
+.btn-diff {
+  padding: 8px 16px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 2px solid transparent;
+  border-radius: 8px;
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-diff:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.btn-diff.active {
+  background: #3b82f6;
+  border-color: #60a5fa;
+}
+
+.btn-start {
+  padding: 12px 32px;
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 1rem;
+  transition: all 0.2s;
+}
+
+.btn-start:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(34, 197, 94, 0.4);
+}
+
+.waiting-text {
+  color: #94a3b8;
+  margin-top: 1rem;
+}
+
+/* Game Stats */
+.game-stats {
+  display: flex;
+  gap: 2rem;
+  margin-bottom: 1rem;
+  font-size: 1.2rem;
+}
+
+/* Game Result */
+.game-result {
+  font-size: 1.5rem;
+  font-weight: bold;
+  padding: 12px 24px;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+}
+
+.game-result.won {
+  background: rgba(34, 197, 94, 0.2);
+  color: #4ade80;
+}
+
+.game-result.lost {
+  background: rgba(239, 68, 68, 0.2);
+  color: #f87171;
+}
+
+/* Board */
+.board-container {
+  background: #6b7280;
+  padding: 8px;
+  border-radius: 8px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  overflow-x: auto;
+  max-width: 100%;
+}
+
+.board {
+  display: grid;
+  gap: 1px;
+  background: #4b5563;
+}
+
+.cell {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.1s;
+}
+
+.cell-hidden {
+  background: linear-gradient(135deg, #9ca3af 0%, #6b7280 100%);
+}
+
+.cell-hidden:hover {
+  background: linear-gradient(135deg, #d1d5db 0%, #9ca3af 100%);
+}
+
+.cell-hidden:active {
+  background: #4b5563;
+}
+
+.cell-revealed {
+  background: #e5e7eb;
+}
+
+.cell-mine {
+  background: #ef4444;
+}
+
+.cell-1 { color: #2563eb; }
+.cell-2 { color: #16a34a; }
+.cell-3 { color: #dc2626; }
+.cell-4 { color: #7c3aed; }
+.cell-5 { color: #b45309; }
+.cell-6 { color: #0891b2; }
+.cell-7 { color: #1f2937; }
+.cell-8 { color: #6b7280; }
+
+/* Game Controls */
+.game-controls {
+  display: flex;
+  gap: 12px;
+  margin-top: 1rem;
+}
+
+.btn-reset {
+  padding: 10px 20px;
+  background: #22c55e;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-reset:hover {
+  background: #16a34a;
+}
+
+.btn-leave {
+  padding: 10px 20px;
+  background: #64748b;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-leave:hover {
+  background: #475569;
+}
+
+/* Help Text */
+.help-text {
+  margin-top: 1.5rem;
+  color: #64748b;
+  font-size: 0.9rem;
+}
